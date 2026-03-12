@@ -102,7 +102,7 @@ public class PatrolController : EnemyController
         Vector2 newVelocity = hurtRecoil;
         newVelocity.x *= _transform.localScale.x;
 
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         StartCoroutine(hurtCoroutine());
     }
@@ -147,9 +147,9 @@ public class PatrolController : EnemyController
         }
 
         // set velocity
-        Vector2 newVelocity = _rigidbody.velocity;
+        Vector2 newVelocity = _rigidbody.linearVelocity;
         newVelocity.x = newWalkSpeed;
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         // animation
         _animator.SetFloat("Speed", Math.Abs(newWalkSpeed));
@@ -162,7 +162,7 @@ public class PatrolController : EnemyController
         Vector2 newVelocity;
         newVelocity.x = 0;
         newVelocity.y = 0;
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         gameObject.layer = LayerMask.NameToLayer("Decoration");
 

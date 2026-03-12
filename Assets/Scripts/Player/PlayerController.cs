@@ -88,7 +88,7 @@ public class PlayerController : MonoBehaviour
             newVelocity.x = 0;
             newVelocity.y = -2;
 
-            _rigidbody.velocity = newVelocity;
+            _rigidbody.linearVelocity = newVelocity;
 
             _isClimb = true;
             _animator.SetBool("IsClimb", true);
@@ -124,7 +124,7 @@ public class PlayerController : MonoBehaviour
         Vector2 newVelocity;
         newVelocity.x = 0;
         newVelocity.y = 0;
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         // visual effect
         _spriteRenderer.color = invulnerableColor;
@@ -168,7 +168,7 @@ public class PlayerController : MonoBehaviour
         _isGrounded = checkGrounded();
         _animator.SetBool("IsGround", _isGrounded);
 
-        float verticalVelocity = _rigidbody.velocity.y;
+        float verticalVelocity = _rigidbody.linearVelocity.y;
         _animator.SetBool("IsDown", verticalVelocity < 0);
 
         if (_isGrounded && verticalVelocity == 0)
@@ -197,8 +197,8 @@ public class PlayerController : MonoBehaviour
         // set velocity
         Vector2 newVelocity;
         newVelocity.x = horizontalMovement;
-        newVelocity.y = _rigidbody.velocity.y;
-        _rigidbody.velocity = newVelocity;
+        newVelocity.y = _rigidbody.linearVelocity.y;
+        _rigidbody.linearVelocity = newVelocity;
 
         if (!_isClimb)
         {
@@ -286,7 +286,7 @@ public class PlayerController : MonoBehaviour
         Vector2 newVelocity;
         newVelocity.x = 0;
         newVelocity.y = 0;
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         // visual effect
         _spriteRenderer.color = invulnerableColor;
@@ -339,10 +339,10 @@ public class PlayerController : MonoBehaviour
     private void jump()
     {
         Vector2 newVelocity;
-        newVelocity.x = _rigidbody.velocity.x;
+        newVelocity.x = _rigidbody.linearVelocity.x;
         newVelocity.y = jumpSpeed;
 
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         _animator.SetBool("IsJump", true);
         jumpLeft -= 1;
@@ -390,10 +390,10 @@ public class PlayerController : MonoBehaviour
     private void fall()
     {
         Vector2 newVelocity;
-        newVelocity.x = _rigidbody.velocity.x;
+        newVelocity.x = _rigidbody.linearVelocity.x;
         newVelocity.y = -fallSpeed;
 
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
     }
 
     private void sprint()
@@ -407,7 +407,7 @@ public class PlayerController : MonoBehaviour
         newVelocity.x = transform.localScale.x * (_isClimb ? sprintSpeed : -sprintSpeed);
         newVelocity.y = 0;
 
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         if (_isClimb)
         {
@@ -522,7 +522,7 @@ public class PlayerController : MonoBehaviour
 
         if (hitRecList.Length > 0)
         {
-            _rigidbody.velocity = attackRecoil;
+            _rigidbody.linearVelocity = attackRecoil;
         }
 
         yield return new WaitForSeconds(effectDelay);

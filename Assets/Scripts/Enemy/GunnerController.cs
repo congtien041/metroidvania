@@ -87,7 +87,7 @@ public class GunnerController : EnemyController
         Vector2 newVelocity = hurtRecoil;
         newVelocity.x *= _transform.localScale.x;
 
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         StartCoroutine(hurtCoroutine());
     }
@@ -99,7 +99,7 @@ public class GunnerController : EnemyController
         Vector2 newVelocity;
         newVelocity.x = 0;
         newVelocity.y = 0;
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
     }
 
     protected override void die()
@@ -112,7 +112,7 @@ public class GunnerController : EnemyController
         Vector2 newVelocity;
         newVelocity.x = 0;
         newVelocity.y = 0;
-        _rigidbody.velocity = newVelocity;
+        _rigidbody.linearVelocity = newVelocity;
 
         // change layer to prevent collision
         gameObject.layer = LayerMask.NameToLayer("Decoration");
