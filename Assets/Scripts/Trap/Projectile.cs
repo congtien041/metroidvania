@@ -16,8 +16,8 @@ public class Projectile : Trap
         if (layerName == "Player")
         {
             PlayerController playerController = collision.collider.GetComponent<PlayerController>();
-            playerController.hurt(damageToPlayer);
-        }
+            // playerController.hurt(damageToPlayer);
+            playerController.hurt(damageToPlayer, gameObject.layer);        }
     }
 
     public override void trigger()

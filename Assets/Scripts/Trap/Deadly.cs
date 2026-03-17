@@ -11,7 +11,8 @@ public class Deadly : MonoBehaviour
         if (layerName == "Player")
         {
             PlayerController playerController = collision.collider.GetComponent<PlayerController>();
-            playerController.hurt(playerController.health);
+            // SỬA TẠI ĐÂY: Truyền thêm layer của chính vật này (gameObject.layer)
+            playerController.hurt(playerController.health, gameObject.layer);
         }
         else if (layerName == "Enemy")
         {

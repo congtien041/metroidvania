@@ -24,7 +24,7 @@ public abstract class EnemyController : MonoBehaviour
         if (layerName == "Player")
         {
             PlayerController playerController = collision.collider.GetComponent<PlayerController>();
-            playerController.hurt(damageToPlayer);
+            playerController.hurt(damageToPlayer, gameObject.layer);
         }
     }
 

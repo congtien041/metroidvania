@@ -73,7 +73,7 @@ public class PatrolController : EnemyController
         if (layerName == "Player")
         {
             PlayerController playerController = collision.collider.GetComponent<PlayerController>();
-            playerController.hurt(1);
+            playerController.hurt(1, gameObject.layer);
         }
     }
 

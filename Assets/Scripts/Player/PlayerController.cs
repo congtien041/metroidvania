@@ -49,6 +49,7 @@ public class PlayerController : MonoBehaviour
     private Transform _transform;
     private SpriteRenderer _spriteRenderer;
     private BoxCollider2D _boxCollider;
+    private string _deathReason = "Unknown";
 
     // Start is called before the first frame update
     private void Start() {
@@ -105,11 +106,18 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void hurt(int damage)
+    public void hurt(int damage, int damageSourceLayer) // Thêm tham số layer vào đây
     {
         gameObject.layer = LayerMask.NameToLayer("PlayerInvulnerable");
-
         health = Math.Max(health - damage, 0);
+
+        // Xác định nguyên nhân dựa trên layer của đối tượng va chạm
+        string layerName = LayerMask.LayerToName(damageSourceLayer);
+        if (layerName == "Trap") {
+            _deathReason = "Killed by Trap";
+        } else if (layerName == "Enemy") {
+            _deathReason = "Killed by Enemy";
+        }
 
         if (health == 0)
         {
@@ -279,23 +287,18 @@ public class PlayerController : MonoBehaviour
     private void die()
     {
         _animator.SetTrigger("IsDead");
-
         _isInputEnabled = false;
-
-        // stop player movement
-        Vector2 newVelocity;
-        newVelocity.x = 0;
-        newVelocity.y = 0;
-        _rigidbody.linearVelocity = newVelocity;
-
-        // visual effect
+        
+        // Dừng chuyển động
+        _rigidbody.linearVelocity = Vector2.zero;
         _spriteRenderer.color = invulnerableColor;
 
-        // death recoil
-        Vector2 newForce;
-        newForce.x = -_transform.localScale.x * deathRecoil.x;
-        newForce.y = deathRecoil.y;
-        _rigidbody.AddForce(newForce, ForceMode2D.Impulse);
+        // Gửi thông tin sang HUD
+        HUD hud = FindFirstObjectByType<HUD>();
+        if (hud != null)
+        {
+            hud.ShowGameOver(_deathReason);
+        }
 
         StartCoroutine(deathCoroutine());
     }
@@ -309,11 +312,22 @@ public class PlayerController : MonoBehaviour
         _boxCollider.enabled = false;
         _boxCollider.enabled = true;
 
-        yield return new WaitForSeconds(deathDelay);
+       yield return new WaitForSeconds(deathDelay);
 
-        material.bounciness = 0;
-        material.friction = 0;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        // Tìm HUD một cách an toàn
+        HUD hud = GameObject.FindAnyObjectByType<HUD>(); 
+        
+        if (hud != null)
+        {
+            // Chỉ gọi hiện Menu khi tìm thấy HUD
+            hud.ShowGameOver(_deathReason); 
+        }
+        else
+        {
+            Debug.LogError("Không tìm thấy đối tượng HUD trong Scene! Hãy kiểm tra lại Scene HUD.");
+            // Nếu không thấy HUD thì tự động load lại để tránh kẹt game
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
     }
 
     /* ######################################################### */
