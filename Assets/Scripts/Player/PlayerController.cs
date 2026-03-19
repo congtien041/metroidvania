@@ -33,6 +33,11 @@ public class PlayerController : MonoBehaviour
     public GameObject attackForwardEffect;
     public GameObject attackDownEffect;
 
+    public float rage;
+    public float maxRage = 100f;
+    public float rageGainPerHit = 10f;
+    public int maxHealth = 5;
+
     private bool _isGrounded;
     private bool _isClimb;
     private bool _isSprintable;
@@ -51,8 +56,8 @@ public class PlayerController : MonoBehaviour
     private BoxCollider2D _boxCollider;
     private string _deathReason = "Unknown";
 
-    // Start is called before the first frame update
-    private void Start() {
+    private void Start()
+    {
         _isInputEnabled = true;
         _isSprintReset = true;
         _isAttackable = true;
@@ -64,7 +69,6 @@ public class PlayerController : MonoBehaviour
         _boxCollider = gameObject.GetComponent<BoxCollider2D>();
     }
 
-    // Update is called once per frame
     private void Update()
     {
         updatePlayerState();
@@ -80,20 +84,16 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        // enter climb state
         if (collision.collider.tag == "Wall" && !_isGrounded)
         {
             _rigidbody.gravityScale = 0;
-
             Vector2 newVelocity;
             newVelocity.x = 0;
             newVelocity.y = -2;
-
             _rigidbody.linearVelocity = newVelocity;
 
             _isClimb = true;
             _animator.SetBool("IsClimb", true);
-
             _isSprintable = true;
         }
     }
@@ -106,12 +106,11 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    public void hurt(int damage, int damageSourceLayer) // Thêm tham số layer vào đây
+    public void hurt(int damage, int damageSourceLayer)
     {
         gameObject.layer = LayerMask.NameToLayer("PlayerInvulnerable");
         health = Math.Max(health - damage, 0);
 
-        // Xác định nguyên nhân dựa trên layer của đối tượng va chạm
         string layerName = LayerMask.LayerToName(damageSourceLayer);
         if (layerName == "Trap") {
             _deathReason = "Killed by Trap";
@@ -125,26 +124,16 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // enter invulnerable state
         _animator.SetTrigger("IsHurt");
-
-        // stop player movement
-        Vector2 newVelocity;
-        newVelocity.x = 0;
-        newVelocity.y = 0;
-        _rigidbody.linearVelocity = newVelocity;
-
-        // visual effect
+        _rigidbody.linearVelocity = Vector2.zero;
         _spriteRenderer.color = invulnerableColor;
 
-        // death recoil
         Vector2 newForce;
         newForce.x = -_transform.localScale.x * hurtRecoil.x;
         newForce.y = hurtRecoil.y;
         _rigidbody.AddForce(newForce, ForceMode2D.Impulse);
 
         _isInputEnabled = false;
-
         StartCoroutine(recoverFromHurtCoroutine());
     }
 
@@ -159,17 +148,13 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        // exit climb state
         if (collision.collider.tag == "Wall")
         {
             _isClimb = false;
             _animator.SetBool("IsClimb", false);
-
             _rigidbody.gravityScale = 1;
         }
     }
-
-    /* ######################################################### */
 
     private void updatePlayerState()
     {
@@ -190,19 +175,15 @@ public class PlayerController : MonoBehaviour
             _isClimb = false;
             _isSprintable = true;
         }
-        else if(_isClimb)
+        else if (_isClimb)
         {
-            // one remaining jump chance after climbing
             jumpLeft = 1;
         }
     }
 
     private void move()
     {
-        // calculate movement
         float horizontalMovement = Input.GetAxis("Horizontal") * moveSpeed;
-
-        // set velocity
         Vector2 newVelocity;
         newVelocity.x = horizontalMovement;
         newVelocity.y = _rigidbody.linearVelocity.y;
@@ -210,33 +191,23 @@ public class PlayerController : MonoBehaviour
 
         if (!_isClimb)
         {
-            // the sprite itself is inversed 
             float moveDirection = -transform.localScale.x * horizontalMovement;
-
             if (moveDirection < 0)
             {
-                // flip player sprite
                 Vector3 newScale;
                 newScale.x = horizontalMovement < 0 ? 1 : -1;
                 newScale.y = 1;
                 newScale.z = 1;
-
                 transform.localScale = newScale;
 
-                if (_isGrounded)
-                {
-                    // turn back animation
-                    _animator.SetTrigger("IsRotate");
-                }
+                if (_isGrounded) _animator.SetTrigger("IsRotate");
             }
             else if (moveDirection > 0)
             {
-                // move forward
                 _animator.SetBool("IsRun", true);
             }
         }
 
-        // stop
         if (Input.GetAxis("Horizontal") == 0)
         {
             _animator.SetTrigger("stopTrigger");
@@ -251,13 +222,9 @@ public class PlayerController : MonoBehaviour
 
     private void jumpControl()
     {
-        if (!Input.GetButtonDown("Jump"))
-            return;
-
-        if (_isClimb)
-            climbJump();
-        else if (jumpLeft > 0)
-            jump();
+        if (!Input.GetButtonDown("Jump")) return;
+        if (_isClimb) climbJump();
+        else if (jumpLeft > 0) jump();
     }
 
     private void fallControl()
@@ -266,7 +233,8 @@ public class PlayerController : MonoBehaviour
         {
             _isFalling = true;
             fall();
-        } else
+        }
+        else
         {
             _isFalling = false;
         }
@@ -286,19 +254,19 @@ public class PlayerController : MonoBehaviour
 
     private void die()
     {
+        if (rage >= maxRage)
+        {
+            StartCoroutine(resurrectCoroutine());
+            return;
+        }
+
         _animator.SetTrigger("IsDead");
         _isInputEnabled = false;
-        
-        // Dừng chuyển động
         _rigidbody.linearVelocity = Vector2.zero;
         _spriteRenderer.color = invulnerableColor;
 
-        // Gửi thông tin sang HUD
         HUD hud = FindFirstObjectByType<HUD>();
-        if (hud != null)
-        {
-            hud.ShowGameOver(_deathReason);
-        }
+        if (hud != null) hud.ShowGameOver(_deathReason);
 
         StartCoroutine(deathCoroutine());
     }
@@ -308,41 +276,21 @@ public class PlayerController : MonoBehaviour
         var material = _boxCollider.sharedMaterial;
         material.bounciness = 0.3f;
         material.friction = 0.3f;
-        // unity bug, need to disable and then enable to make it work
         _boxCollider.enabled = false;
         _boxCollider.enabled = true;
 
-       yield return new WaitForSeconds(deathDelay);
+        yield return new WaitForSeconds(deathDelay);
 
-        // Tìm HUD một cách an toàn
-        HUD hud = GameObject.FindAnyObjectByType<HUD>(); 
-        
-        if (hud != null)
-        {
-            // Chỉ gọi hiện Menu khi tìm thấy HUD
-            hud.ShowGameOver(_deathReason); 
-        }
-        else
-        {
-            Debug.LogError("Không tìm thấy đối tượng HUD trong Scene! Hãy kiểm tra lại Scene HUD.");
-            // Nếu không thấy HUD thì tự động load lại để tránh kẹt game
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        }
+        HUD hud = GameObject.FindAnyObjectByType<HUD>();
+        if (hud != null) hud.ShowGameOver(_deathReason);
+        else SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
-
-    /* ######################################################### */
 
     private bool checkGrounded()
     {
         Vector2 origin = _transform.position;
-
         float radius = 0.2f;
-
-        // detect downwards
-        Vector2 direction;
-        direction.x = 0;
-        direction.y = -1;
-
+        Vector2 direction = Vector2.down;
         float distance = 0.5f;
         LayerMask layerMask = LayerMask.GetMask("Platform");
 
@@ -355,19 +303,12 @@ public class PlayerController : MonoBehaviour
         Vector2 newVelocity;
         newVelocity.x = _rigidbody.linearVelocity.x;
         newVelocity.y = jumpSpeed;
-
         _rigidbody.linearVelocity = newVelocity;
 
         _animator.SetBool("IsJump", true);
         jumpLeft -= 1;
-        if (jumpLeft == 0)
-        {
-            _animator.SetTrigger("IsJumpSecond");
-        } 
-        else if (jumpLeft == 1)
-        {
-            _animator.SetTrigger("IsJumpFirst");
-        }
+        if (jumpLeft == 0) _animator.SetTrigger("IsJumpSecond");
+        else if (jumpLeft == 1) _animator.SetTrigger("IsJumpFirst");
     }
 
     private void climbJump()
@@ -387,50 +328,30 @@ public class PlayerController : MonoBehaviour
     private IEnumerator climbJumpCoroutine(float delay)
     {
         yield return new WaitForSeconds(delay);
-
         _isInputEnabled = true;
-
         _animator.ResetTrigger("IsClimbJump");
-
-        // jump to the opposite direction
-        Vector3 newScale;
-        newScale.x = -transform.localScale.x;
-        newScale.y = 1;
-        newScale.z = 1;
-
+        Vector3 newScale = new Vector3(-transform.localScale.x, 1, 1);
         transform.localScale = newScale;
     }
 
     private void fall()
     {
-        Vector2 newVelocity;
-        newVelocity.x = _rigidbody.linearVelocity.x;
-        newVelocity.y = -fallSpeed;
-
+        Vector2 newVelocity = new Vector2(_rigidbody.linearVelocity.x, -fallSpeed);
         _rigidbody.linearVelocity = newVelocity;
     }
 
     private void sprint()
     {
-        // reject input during sprinting
         _isInputEnabled = false;
         _isSprintable = false;
         _isSprintReset = false;
 
-        Vector2 newVelocity;
-        newVelocity.x = transform.localScale.x * (_isClimb ? sprintSpeed : -sprintSpeed);
-        newVelocity.y = 0;
-
+        Vector2 newVelocity = new Vector2(transform.localScale.x * (_isClimb ? sprintSpeed : -sprintSpeed), 0);
         _rigidbody.linearVelocity = newVelocity;
 
         if (_isClimb)
         {
-            // sprint to the opposite direction
-            Vector3 newScale;
-            newScale.x = -transform.localScale.x;
-            newScale.y = 1;
-            newScale.z = 1;
-
+            Vector3 newScale = new Vector3(-transform.localScale.x, 1, 1);
             transform.localScale = newScale;
         }
 
@@ -443,7 +364,6 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(sprintDelay);
         _isInputEnabled = true;
         _isSprintable = true;
-
         yield return new WaitForSeconds(sprintInterval);
         _isSprintReset = true;
     }
@@ -451,39 +371,24 @@ public class PlayerController : MonoBehaviour
     private void attack()
     {
         float verticalDirection = Input.GetAxis("Vertical");
-        if (verticalDirection > 0)
-            attackUp();
-        else if (verticalDirection < 0 && !_isGrounded)
-            attackDown();
-        else
-            attackForward();
+        if (verticalDirection > 0) attackUp();
+        else if (verticalDirection < 0 && !_isGrounded) attackDown();
+        else attackForward();
     }
 
     private void attackUp()
     {
         _animator.SetTrigger("IsAttackUp");
         attackUpEffect.SetActive(true);
-
-        Vector2 detectDirection;
-        detectDirection.x = 0;
-        detectDirection.y = 1;
-
-        StartCoroutine(attackCoroutine(attackUpEffect, _attackEffectLifeTime, attackInterval, detectDirection, attackUpRecoil));
+        StartCoroutine(attackCoroutine(attackUpEffect, _attackEffectLifeTime, attackInterval, Vector2.up, attackUpRecoil));
     }
 
     private void attackForward()
     {
         _animator.SetTrigger("IsAttack");
         attackForwardEffect.SetActive(true);
-
-        Vector2 detectDirection;
-        detectDirection.x = -transform.localScale.x;
-        detectDirection.y = 0;
-
-        Vector2 recoil;
-        recoil.x = transform.localScale.x > 0 ? -attackForwardRecoil.x : attackForwardRecoil.x;
-        recoil.y = attackForwardRecoil.y;
-
+        Vector2 detectDirection = new Vector2(-transform.localScale.x, 0);
+        Vector2 recoil = new Vector2(transform.localScale.x > 0 ? -attackForwardRecoil.x : attackForwardRecoil.x, attackForwardRecoil.y);
         StartCoroutine(attackCoroutine(attackForwardEffect, _attackEffectLifeTime, attackInterval, detectDirection, recoil));
     }
 
@@ -491,20 +396,35 @@ public class PlayerController : MonoBehaviour
     {
         _animator.SetTrigger("IsAttackDown");
         attackDownEffect.SetActive(true);
-
-        Vector2 detectDirection;
-        detectDirection.x = 0;
-        detectDirection.y = -1;
-
-        StartCoroutine(attackCoroutine(attackDownEffect, _attackEffectLifeTime, attackInterval, detectDirection, attackDownRecoil));
+        StartCoroutine(attackCoroutine(attackDownEffect, _attackEffectLifeTime, attackInterval, Vector2.down, attackDownRecoil));
     }
 
-    private IEnumerator attackCoroutine(GameObject attackEffect,float effectDelay, float attackInterval, Vector2 detectDirection, Vector2 attackRecoil)
+    public void heal(int amount)
+    {
+        health = Math.Min(health + amount, maxHealth);
+    }
+
+    private IEnumerator resurrectCoroutine()
+    {
+        rage = 0;
+        health = maxHealth;
+        _isInputEnabled = false;
+        _animator.SetTrigger("IsHurt");
+        for (int i = 0; i < 5; i++)
+        {
+            _spriteRenderer.color = invulnerableColor;
+            yield return new WaitForSeconds(0.1f);
+            _spriteRenderer.color = Color.white;
+            yield return new WaitForSeconds(0.1f);
+        }
+        _isInputEnabled = true;
+        gameObject.layer = LayerMask.NameToLayer("Player");
+    }
+
+    private IEnumerator attackCoroutine(GameObject attackEffect, float effectDelay, float attackInterval, Vector2 detectDirection, Vector2 attackRecoil)
     {
         Vector2 origin = _transform.position;
-
         float radius = 0.6f;
-
         float distance = 1.5f;
         LayerMask layerMask = LayerMask.GetMask("Enemy") | LayerMask.GetMask("Trap") | LayerMask.GetMask("Switch") | LayerMask.GetMask("Projectile");
 
@@ -513,37 +433,31 @@ public class PlayerController : MonoBehaviour
         foreach (RaycastHit2D hitRec in hitRecList)
         {
             GameObject obj = hitRec.collider.gameObject;
-
             string layerName = LayerMask.LayerToName(obj.layer);
-            
-            if (layerName == "Switch")
-            {
-                Switch swithComponent = obj.GetComponent<Switch>();
-                if (swithComponent != null)
-                    swithComponent.turnOn();
-            } 
-            else if (layerName == "Enemy")
+
+            // TÌM ĐOẠN NÀY:
+            if (layerName == "Enemy")
             {
                 EnemyController enemyController = obj.GetComponent<EnemyController>();
                 if (enemyController != null)
+                {
                     enemyController.hurt(1);
+                    rage = Math.Min(rage + rageGainPerHit, maxRage);
+                    
+                    // SỬA LẠI DÒNG NÀY:
+                    if (enemyController.health <= 0) 
+                    {
+                        GlobalController.Instance.AddScore(enemyController.scoreValue);
+                    }
+                }
             }
-            else if (layerName == "Projectile")
-            {
-                Destroy(obj);
-            }
+            // Thêm logic cho Switch và Projectile nếu cần
         }
 
-        if (hitRecList.Length > 0)
-        {
-            _rigidbody.linearVelocity = attackRecoil;
-        }
+        if (hitRecList.Length > 0) _rigidbody.linearVelocity = attackRecoil;
 
         yield return new WaitForSeconds(effectDelay);
-
         attackEffect.SetActive(false);
-
-        // attack cool down
         _isAttackable = false;
         yield return new WaitForSeconds(attackInterval);
         _isAttackable = true;

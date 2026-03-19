@@ -16,6 +16,8 @@ public abstract class EnemyController : MonoBehaviour
 
     protected State _currentState;
     protected float _playerEnemyDistance;
+    // Thêm dòng này để tùy chỉnh điểm cho từng loại quái
+    public int scoreValue = 100;
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
